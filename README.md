@@ -2,11 +2,16 @@
 
 ## Overview
 
-UnixY2K is a command-line interface (CLI) tool that helps users track the time remaining until the infamous UnixY2K problem, a critical moment in computing history when 32-bit Unix timestamps will reach their maximum value on January 19, 2038, at 03:14:07 UTC.
+UnixY2K is a command-line interface (CLI) tool that helps users track the time remaining until the infamous UnixY2K
+problem, a critical moment in computing history when 32-bit Unix timestamps will reach their maximum value on
+January 19, 2038, at 03:14:07 UTC.
 
 ## The UnixY2K Problem
 
-The UnixY2K problem, often referred to as the "Year 2038 problem" or "Millennium bug," is a potential computer software issue where time representations could fail due to integer overflow in 32-bit systems. When the Unix timestamp reaches 2^31 - 1 (2,147,483,647), it will cause potential system failures, data corruption, and unexpected behavior in legacy systems.
+The UnixY2K problem, often referred to as the "Year 2038 problem" or "Millennium bug," is a potential computer
+software issue where time representations could fail due to integer overflow in 32-bit systems. When the Unix
+timestamp reaches 2^31 - 1 (2,147,483,647), it will cause potential system failures, data corruption, and
+unexpected behavior in legacy systems.
 
 ## Features
 
@@ -24,18 +29,23 @@ The UnixY2K problem, often referred to as the "Year 2038 problem" or "Millennium
 
 ### Compiling from Source
 
-1. Clone the repository:
+Alexis Sanchez - <mail@aasanchez.me>
+
+1. Clone repositoruy
+
    ```bash
-   git clone https://github.com/yourusername/unixy2k.git
+   git clone https://github.com/aasanchez/unixy2k-cli.git
    cd unixy2k
    ```
 
 2. Build the project:
+
    ```bash
    zig build-exe unixy2k.zig
    ```
 
 3. (Optional) Install system-wide:
+
    ```bash
    sudo cp unixy2k /usr/local/bin/
    ```
@@ -51,32 +61,36 @@ Run the tool without arguments to get a standard time remaining output:
 ```
 
 Example output:
-```
+
+```txt
 Time remaining until UnixY2K: 14 years, 3 months, 22 days, 15 hours, 40 minutes, 15 seconds.
 ```
 
 ### Command-Line Options
 
-| Option           | Short | Description                                      |
-|-----------------|-------|--------------------------------------------------|
-| `--help`        | `-h`  | Display help message and usage instructions      |
-| `--simple`      | `-s`  | Display time in compact YY:MM:DD-HH:mm:ss format |
-| `--watch`       | `-w`  | Continuously update and display remaining time   |
+| Option     | Short | Description                                      |
+|------------|-------|--------------------------------------------------|
+| `--help`   | `-h`  | Display help message and usage instructions      |
+| `--simple` | `-s`  | Display time in compact YY:MM:DD-HH:mm:ss format |
+| `--watch`  | `-w`  | Continuously update and display remaining time   |
 
 ### Examples
 
-1. Display help:
+- Display help:
+
    ```bash
    ./unixy2k --help
    ```
 
-2. Simple format:
+- Simple format:
+
    ```bash
    ./unixy2k --simple
    # Output: 14:03:22-15:40:15
    ```
 
-3. Watch mode:
+- Watch mode:
+
    ```bash
    ./unixy2k --watch
    # Continuously updates remaining time
@@ -116,7 +130,7 @@ zig build
 ### Run Tests
 
 ```bash
-zig test unixy2k.zig
+zig test src/unixy2k.zig
 ```
 
 ## Related Resources
@@ -130,9 +144,9 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-Your Name - [Your Email]
+Alexis Sanchez - <mail@aasanchez.me>
 
-Project Link: [https://github.com/yourusername/unixy2k](https://github.com/yourusername/unixy2k)
+Project Link: [https://github.com/aasanchez/unixy2k-cli](https://github.com/aasanchez/unixy2k-cli)
 
 ## Acknowledgments
 
@@ -140,5 +154,4 @@ Project Link: [https://github.com/yourusername/unixy2k](https://github.com/youru
 - All contributors who help raise awareness about the UnixY2K problem
 
 ---
-
 **Disclaimer**: This tool is for educational and awareness purposes. Always consult professional system administrators for critical system updates.

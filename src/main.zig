@@ -1,5 +1,6 @@
 const std = @import("std");
 const time = std.time;
+const testing = std.testing;
 
 const UNIXY2K_TIMESTAMP: u64 = 2147483647; // Unix timestamp for 2038-01-19 03:14:07 UTC
 
@@ -27,6 +28,38 @@ fn show_help() void {
 // Function to calculate the time remaining
 fn calculate_remaining_time() [6]u64 {
     const currentTimestamp = @as(u64, @intCast(time.timestamp()));
+    const remainingSeconds = if (currentTimestamp < UNIXY2K_TIMESTAMP)
+        UNIXY2K_TIMESTAMP - currentTimestamp
+    else
+        0;
+
+    const secondsPerMinute = 60;
+    const secondsPerHour = secondsPerMinute * 60;
+    const secondsPerDay = secondsPerHour * 24;
+    const secondsPerYear = secondsPerDay * 365;
+    const secondsPerMonth = secondsPerYear / 12;
+
+    const years = remainingSeconds / secondsPerYear;
+    var remaining = remainingSeconds % secondsPerYear;
+
+    const months = remaining / secondsPerMonth;
+    remaining %= secondsPerMonth;
+
+    const days = remaining / secondsPerDay;
+    remaining %= secondsPerDay;
+
+    const hours = remaining / secondsPerHour;
+    remaining %= secondsPerHour;
+
+    const minutes = remaining / secondsPerMinute;
+    const seconds = remaining % secondsPerMinute;
+
+    return [6]u64{ years, months, days, hours, minutes, seconds };
+}
+
+// Variant for testing with custom timestamp
+fn calculate_remaining_time_with_timestamp(timestamp: u64) [6]u64 {
+    const currentTimestamp = timestamp;
     const remainingSeconds = if (currentTimestamp < UNIXY2K_TIMESTAMP)
         UNIXY2K_TIMESTAMP - currentTimestamp
     else
@@ -109,4 +142,36 @@ pub fn main() !void {
         remaining_time[4], // Minutes
         remaining_time[5], // Seconds,
     });
+}
+
+// Unit Tests
+test "calculate_remaining_time returns correct array size" {
+    const remaining_time = calculate_remaining_time_with_timestamp(@as(u64, @intCast(time.timestamp())));
+    try testing.expectEqual(@as(usize, 6), remaining_time.len);
+}
+
+test "calculate_remaining_time handles current timestamp" {
+    const current_timestamp: u64 = @intCast(time.timestamp());
+    const remaining_time = calculate_remaining_time_with_timestamp(current_timestamp);
+
+    const total_remaining_seconds =
+        remaining_time[0] * 365 * 24 * 60 * 60 +
+        remaining_time[1] * 30 * 24 * 60 * 60 +
+        remaining_time[2] * 24 * 60 * 60 +
+        remaining_time[3] * 60 * 60 +
+        remaining_time[4] * 60 +
+        remaining_time[5];
+
+    try testing.expect(total_remaining_seconds <= UNIXY2K_TIMESTAMP - current_timestamp);
+}
+
+test "calculate_remaining_time returns zero values after Y2K timestamp" {
+    const remaining_time = calculate_remaining_time_with_timestamp(UNIXY2K_TIMESTAMP + 1);
+
+    try testing.expectEqual(@as(u64, 0), remaining_time[0]); // Years should be 0
+    try testing.expectEqual(@as(u64, 0), remaining_time[1]); // Months should be 0
+    try testing.expectEqual(@as(u64, 0), remaining_time[2]); // Days should be 0
+    try testing.expectEqual(@as(u64, 0), remaining_time[3]); // Hours should be 0
+    try testing.expectEqual(@as(u64, 0), remaining_time[4]); // Minutes should be 0
+    try testing.expectEqual(@as(u64, 0), remaining_time[5]); // Seconds should be 0
 }
