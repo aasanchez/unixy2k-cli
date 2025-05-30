@@ -2,72 +2,195 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"time"
+
+	"github.com/aasanchez/unixy2k-cli/timer"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	targetEpoch = 2147483647 // 2038-01-19 03:14:07 UTC
+// Styles (defined globally for reuse)
+var (
+	titleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#87CEFA")). // LightSkyBlue
+			PaddingBottom(1)
+
+	labelStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("242")). // Light grey
+			Width(15).                          // Fixed width for alignment
+			PaddingRight(1)
+
+	valueStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FFFFFF")) // White
+
+	binaryValueStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#FF69B4")) // HotPink
+
+	countdownLabelStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("220")). // Gold
+				PaddingTop(1).
+				PaddingBottom(1)
+
+	countdownValueStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color("#32CD32")) // LimeGreen
+
+	errorStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#FF0000")) // Red
+			// Border(lipgloss.RoundedBorder()).
+			// BorderForeground(lipgloss.Color("#FF0000")).
+			// Padding(1, 2)
+
+	helpStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("240")). // Darker grey
+			PaddingTop(1)
 )
 
-func main() {
-	for {
-		printCurrentStatus()
-		time.Sleep(1 * time.Second)
+// model holds the application's state.
+type model struct {
+	timerStatus timer.Status
+	err         error
+	width       int
+	height      int
+}
+
+// tickMsg is a message sent periodically to update the timer.
+type tickMsg struct{}
+
+// initialModel creates the initial state of the application.
+func initialModel() model {
+	ts, err := timer.GetStatus()
+	if err != nil {
+		return model{err: err}
+	}
+	return model{
+		timerStatus: *ts,
+		err:         nil,
 	}
 }
 
-func printCurrentStatus() {
-	now := time.Now().UTC()
-	epoch := now.Unix()
+// Init is called when the program starts.
+func (m model) Init() tea.Cmd {
+	return tickCmd()
+}
 
-	// Format UTC time
-	utcString := now.Format("2006-01-02 15:04:05")
+// tickCmd creates a command that sends a tickMsg after a delay.
+func tickCmd() tea.Cmd {
+	return tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
+		return tickMsg{}
+	})
+}
 
-	// Binary representation, padded to 32 bits
-	binaryString := fmt.Sprintf("%032b", epoch)
+// Update handles messages and updates the model.
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
 
-	// Split binary into 8-bit chunks
-	var binaryChunks []string
-	for i := 0; i < 32; i += 8 {
-		binaryChunks = append(binaryChunks, binaryString[i:i+8])
+	case tickMsg:
+		newStatus, err := timer.GetStatus()
+		if err != nil {
+			m.err = err
+			return m, tickCmd()
+		}
+		m.timerStatus = *newStatus
+		m.err = nil
+		return m, tickCmd()
+
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "ctrl+c", "esc":
+			return m, tea.Quit
+		}
+	}
+	return m, nil
+}
+
+// View renders the UI.
+func (m model) View() string {
+	if m.width == 0 || m.height == 0 {
+		// Use a simple styled message for initializing
+		initStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("242")).SetString("Initializing display...")
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, initStyle.String())
 	}
 
-	// Time left until 2038 problem
-	remaining := float64(targetEpoch - epoch)
+	if m.err != nil {
+		errorMsg := errorStyle.Render(fmt.Sprintf("Error: %v", m.err))
+		// Add help text below error for consistency
+		help := helpStyle.Render("Press 'q', 'esc', or 'ctrl+c' to quit.")
+		fullError := lipgloss.JoinVertical(lipgloss.Center, errorMsg, help)
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, fullError)
+	}
 
-	// Time units in seconds
-	secondsInMinute := 60.0
-	secondsInHour := 60.0 * secondsInMinute
-	secondsInDay := 24.0 * secondsInHour
-	secondsInYear := 365.25 * secondsInDay // Account for leap years
-	secondsInMonth := secondsInYear / 12.0
+	// Content formatting
+	title := titleStyle.Render("🕰️  Unixy2K CLI Countdown 🕰️") // Added emojis for fun
 
-	// Calculate remaining time components
-	years := int(remaining / secondsInYear)
-	remaining = remaining - float64(years)*secondsInYear
+	utcRow := lipgloss.JoinHorizontal(lipgloss.Left,
+		labelStyle.Render("UTC Date:"),
+		valueStyle.Render(m.timerStatus.UTCString),
+	)
 
-	months := int(remaining / secondsInMonth)
-	remaining = remaining - float64(months)*secondsInMonth
+	epochRow := lipgloss.JoinHorizontal(lipgloss.Left,
+		labelStyle.Render("Epoch Time:"),
+		valueStyle.Render(fmt.Sprintf("%d", m.timerStatus.Epoch)),
+	)
 
-	days := int(remaining / secondsInDay)
-	remaining = remaining - float64(days)*secondsInDay
+	binaryChunkStr := ""
+	if m.timerStatus.BinaryChunks != nil {
+		binaryChunkStr = strings.Join(m.timerStatus.BinaryChunks, " ")
+	}
+	binaryRow := lipgloss.JoinHorizontal(lipgloss.Left,
+		labelStyle.Render("Epoch Binary:"),
+		binaryValueStyle.Render(binaryChunkStr),
+	)
 
-	hours := int(remaining / secondsInHour)
-	remaining = remaining - float64(hours)*secondsInHour
+	countdownTextLabel := countdownLabelStyle.Render("⏳ Remaining Time until 2038-01-19 03:14:07 UTC:")
 
-	minutes := int(remaining / secondsInMinute)
-	seconds := int(remaining - float64(minutes)*secondsInMinute)
+	remainingTimeStr := fmt.Sprintf("%d years, %d months, %d days, %d hours, %d minutes, %d seconds",
+		m.timerStatus.Years, m.timerStatus.Months, m.timerStatus.Days,
+		m.timerStatus.Hours, m.timerStatus.Minutes, m.timerStatus.Seconds,
+	)
+	countdownTextValue := countdownValueStyle.Render(remainingTimeStr)
 
-	// Clear screen (works on Unix)
-	fmt.Print("\033[H\033[2J")
+	// Main content block
+	mainContent := lipgloss.JoinVertical(lipgloss.Center, // Centering text within this block
+		title,
+		utcRow,
+		epochRow,
+		binaryRow,
+		countdownTextLabel,
+		countdownTextValue,
+	)
 
-	// Output
-	fmt.Println("==== unixy2k CLI Countdown ====")
-	fmt.Printf("UTC Date      : %s\n", utcString)
-	fmt.Printf("Epoch Time    : %d\n", epoch)
-	fmt.Printf("Epoch Binary  : %s\n", binaryChunks)
-	fmt.Println()
-	fmt.Printf("Remaining Time until 2038-01-19 03:14:07 UTC:\n")
-	fmt.Printf("%d years, %d months, %d days, %d hours, %d minutes, %d seconds\n",
-		years, months, days, hours, minutes, seconds)
+	// Help text
+	help := helpStyle.Render("Press 'q', 'esc', or 'ctrl+c' to quit.")
+
+	// Combine main content and help text
+	fullScreenContent := lipgloss.JoinVertical(lipgloss.Center,
+		mainContent,
+		help, // Place help text below the main content block
+	)
+
+	// Center the entire block on screen
+	return lipgloss.Place(
+		m.width, m.height,
+		lipgloss.Center, lipgloss.Center,
+		fullScreenContent,
+	)
+}
+
+func main() {
+	// It's good practice to initialize the model once
+	m := initialModel()
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
+
+	if _, err := p.Run(); err != nil {
+		log.Fatalf("Alas, there's been an error: %v", err)
+	}
 }
