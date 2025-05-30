@@ -1,157 +1,114 @@
-# UnixY2K CLI
+# Unixy2K CLI (Go Edition)
 
 ## Overview
 
-UnixY2K is a command-line interface (CLI) tool that helps users track the time remaining until the infamous UnixY2K
-problem, a critical moment in computing history when 32-bit Unix timestamps will reach their maximum value on
-January 19, 2038, at 03:14:07 UTC.
+Unixy2K CLI is a Go-based terminal application that provides a real-time display of:
+*   Current UTC (Coordinated Universal Time)
+*   Current Epoch time (seconds since January 1, 1970, UTC)
+*   Binary representation of the current Epoch time (32-bit)
+*   A live countdown to the Year 2038 problem (Unix epoch rollover: 2038-01-19 03:14:07 UTC).
 
-## The UnixY2K Problem
-
-The UnixY2K problem, often referred to as the "Year 2038 problem" or "Millennium bug," is a potential computer
-software issue where time representations could fail due to integer overflow in 32-bit systems. When the Unix
-timestamp reaches 2^31 - 1 (2,147,483,647), it will cause potential system failures, data corruption, and
-unexpected behavior in legacy systems.
+This tool utilizes the excellent Charm SH libraries (Bubble Tea and Lip Gloss) for its interactive and styled terminal user interface.
 
 ## Features
 
-- 🕒 Displays remaining time until the UnixY2K timestamp
-- 📊 Multiple output formats
-- 🔄 Continuous watch mode
-- 📝 Detailed help information
+*   **Live Countdown:** Real-time updates for all displayed time values.
+*   **Full-Screen Terminal UI:** An immersive, focused display.
+*   **Comprehensive Time Info:** Shows UTC, Epoch, and the 32-bit binary representation of the Epoch.
+*   **Cross-Platform:** Built with Go, easily compilable for various operating systems and architectures.
 
-## Prerequisites
+## Building and Running Locally
 
-- [Zig compiler](https://ziglang.org/download/) (version 0.11.0 or later)
-- A Unix-like operating system (Linux, macOS, BSD)
+### Prerequisites
 
-## Installation
+*   Go (Version 1.21 or newer recommended)
 
-### Compiling from Source
+### Instructions
 
-Alexis Sanchez - <mail@aasanchez.me>
+1.  **Clone the repository** (if you haven't already):
+    ```bash
+    # Replace <repo_url> with the actual repository URL
+    # git clone <repo_url>
+    # cd <repo_directory_name>
+    ```
+    (Note: For this environment, the code is likely already checked out in `/app`)
 
-1. Clone repositoruy
+2.  **To run directly from source** (from the project root directory `/app`):
+    ```bash
+    go run github.com/aasanchez/unixy2k-cli
+    ```
+    This command fetches dependencies, compiles, and runs the application in one step. The main package is located in the `src/` directory.
 
-   ```bash
-   git clone https://github.com/aasanchez/unixy2k-cli.git
-   cd unixy2k
-   ```
+3.  **To build the binary** (from the project root directory `/app`):
+    This command will create an executable file named `unixy2k-cli` (or `unixy2k-cli.exe` on Windows) in the current directory.
+    ```bash
+    go build -o unixy2k-cli ./src
+    ```
+    Then run the compiled application:
+    ```bash
+    ./unixy2k-cli
+    ```
 
-2. Build the project:
+## Cross-Compilation
 
-   ```bash
-   zig build-exe unixy2k.zig
-   ```
+Go excels at cross-compilation. You can build executables for different operating systems and architectures from your current machine by setting the `GOOS` (target Operating System) and `GOARCH` (target Architecture) environment variables.
 
-3. (Optional) Install system-wide:
+**Target Operating Systems (`GOOS`):**
+*   `linux` (for Ubuntu, Debian, AlmaLinux, OpenSuse, etc.)
+*   `darwin` (for MacOS)
+*   `windows`
 
-   ```bash
-   sudo cp unixy2k /usr/local/bin/
-   ```
+**Target Architectures (`GOARCH`):**
+*   `amd64` (Most common for x86-64 desktops and servers)
+*   `arm64` (Apple Silicon Macs, newer Raspberry Pi models, some ARM-based servers)
+
+**Example Commands (run from the project root directory):**
+
+First, you might need to create a directory for your builds:
+```bash
+mkdir build
+```
+
+*   **For Linux:**
+    *   AMD64:
+        ```bash
+        GOOS=linux GOARCH=amd64 go build -o build/unixy2k-cli-linux-amd64 ./src
+        ```
+    *   ARM64:
+        ```bash
+        GOOS=linux GOARCH=arm64 go build -o build/unixy2k-cli-linux-arm64 ./src
+        ```
+
+*   **For MacOS (Darwin):**
+    *   AMD64:
+        ```bash
+        GOOS=darwin GOARCH=amd64 go build -o build/unixy2k-cli-darwin-amd64 ./src
+        ```
+    *   ARM64 (Apple Silicon):
+        ```bash
+        GOOS=darwin GOARCH=arm64 go build -o build/unixy2k-cli-darwin-arm64 ./src
+        ```
+
+*   **For Windows:**
+    *   AMD64:
+        ```bash
+        GOOS=windows GOARCH=amd64 go build -o build/unixy2k-cli-windows-amd64.exe ./src
+        ```
+
+The compiled binaries will be placed in the `build/` directory.
 
 ## Usage
 
-### Basic Usage
+Run the application (either directly via `go run` or by executing a compiled binary).
 
-Run the tool without arguments to get a standard time remaining output:
-
-```bash
-./unixy2k
-```
-
-Example output:
-
-```txt
-Time remaining until UnixY2K: 14 years, 3 months, 22 days, 15 hours, 40 minutes, 15 seconds.
-```
-
-### Command-Line Options
-
-| Option     | Short | Description                                      |
-|------------|-------|--------------------------------------------------|
-| `--help`   | `-h`  | Display help message and usage instructions      |
-| `--simple` | `-s`  | Display time in compact YY:MM:DD-HH:mm:ss format |
-| `--watch`  | `-w`  | Continuously update and display remaining time   |
-
-### Examples
-
-- Display help:
-
-   ```bash
-   ./unixy2k --help
-   ```
-
-- Simple format:
-
-   ```bash
-   ./unixy2k --simple
-   # Output: 14:03:22-15:40:15
-   ```
-
-- Watch mode:
-
-   ```bash
-   ./unixy2k --watch
-   # Continuously updates remaining time
-   ```
-
-## Technical Details
-
-- **Language**: Zig
-- **Timestamp Handling**: Uses 64-bit timestamp to calculate remaining time
-- **Precision**: Calculates years, months, days, hours, minutes, and seconds
-- **Constant**: `UNIXY2K_TIMESTAMP` set to 2,147,483,647 (2^31 - 1)
-
-## Potential Limitations
-
-- Assumes Gregorian calendar calculations
-- Does not account for leap seconds
-- Simplified time calculations might have minor inaccuracies
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## Building and Testing
-
-### Build
-
-```bash
-zig build
-```
-
-### Run Tests
-
-```bash
-zig test src/unixy2k.zig
-```
-
-## Related Resources
-
-- [Unix Timestamp Converter](https://www.unixtimestamp.com/)
-- [Year 2038 Problem - Wikipedia](https://en.wikipedia.org/wiki/Year_2038_problem)
+*   Press `q`, `Ctrl+C`, or `Esc` to quit the application.
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
-## Contact
-
-Alexis Sanchez - <mail@aasanchez.me>
-
-Project Link: [https://github.com/aasanchez/unixy2k-cli](https://github.com/aasanchez/unixy2k-cli)
+This project is licensed under the MIT License.
 
 ## Acknowledgments
 
-- [Zig Programming Language](https://ziglang.org/)
-- All contributors who help raise awareness about the UnixY2K problem
-
----
-**Disclaimer**: This tool is for educational and awareness purposes. Always consult professional system administrators for critical system updates.
+*   This application is built using the fantastic [Charm SH](https://charm.sh/) libraries:
+    *   [Bubble Tea](https://github.com/charmbracelet/bubbletea) for the terminal application framework.
+    *   [Lip Gloss](https://github.com/charmbracelet/lipgloss) for terminal styling.
